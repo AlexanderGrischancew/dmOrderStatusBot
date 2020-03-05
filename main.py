@@ -49,22 +49,15 @@ def check_args(context):
     return re.fullmatch("[0-9]{6}", context.args[0]) and re.fullmatch("[0-9]{3,5}", context.args[1])
 
 
-def check_in_orders(order_number, store_number, user_id, delete):
-    # This not only checks if the combination of order number and store number is on the given user watchlist, but also
-    # can delete the order if delete is true
+def in_orders(order_number, store_number, user_id):
     print("CHECKING IF TUPLE " + order_number + " " + store_number + " IS ON WATCHLIST FROM USER: " + str(user_id))
-    print("DELETE IS SET: " + str(delete))
     current_orders = ORDERS.get(user_id)
     for order in current_orders:
         if order[0] == order_number and order[1] == store_number:
             print("TUPLE FOUND: " + order[0] + " " + order[1])
-            if delete:
-                print("TUPLE DELETED")
-                current_orders.remove(order)
-                persistence_update()
-            return True
+            return order
     print("TUPLE NOT FOUND")
-    return False
+    return None
 
 
 def add_order(update, context):
@@ -91,7 +84,7 @@ def add_order(update, context):
 
         current_orders = ORDERS.get(chat_id)
 
-        if check_in_orders(order_number, store_number, chat_id, False):
+        if in_orders(order_number, store_number, chat_id):
             print("ORDER NUMBER & STORE NUMBER TUPLE ALREADY ON WATCHLIST")
             update.message.reply_text(
                 "Your order number: " + order_number + " and store number: " + store_number + " is already on "
@@ -135,15 +128,21 @@ def remove_order(update, context):
         print("ORDER NUMBER: " + order_number)
         print("STORE NUMBER: " + store_number)
         print("CHAT ID: " + str(chat_id))
-        if check_in_orders(order_number, store_number, chat_id, True):
+        order = in_orders(order_number, store_number, chat_id)
+        if order:
             print("ORDER WAS ON WATCHLIST")
+            user_orders = ORDERS.get(chat_id)
+            print("here")
+            user_orders.remove(order)
+            print("here2")
+            persistence_update()
             update.message.reply_text(
                 "Your order number: " + order_number + " and store number: " + store_number + " has been removed "
                                                                                               "from your watchlist")
         else:
             print("ORDER NOT ON WATCHLIST")
             update.message.reply_text(
-                "Your order number: " + order_number + " and store number: " + store_number + "is not on "
+                "Your order number: " + order_number + " and store number: " + store_number + " is not on "
                                                                                               "your watchlist")
     print("REMOVE ORDER COMMAND FINISHED")
     print("-----")
