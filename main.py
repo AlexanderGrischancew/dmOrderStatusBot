@@ -12,6 +12,7 @@ import logging
 
 ORDERS = dict()
 PERSISTENCEFILENAME = "dmOrderStatusBot.dat"
+TOKENFILE = "token.txt"
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -132,9 +133,7 @@ def remove_order(update, context):
         if order:
             print("ORDER WAS ON WATCHLIST")
             user_orders = ORDERS.get(chat_id)
-            print("here")
             user_orders.remove(order)
-            print("here2")
             persistence_update()
             update.message.reply_text(
                 "Your order number: " + order_number + " and store number: " + store_number + " has been removed "
@@ -265,14 +264,18 @@ def persistence_load():
                 line_split = line.split(" ")
                 print(str(line_split))
                 # it is important that the user id contained in line_split[0] is cast to int else the will be data loss
-                if int(line_split[0]) not in ORDERS:
-                    ORDERS[int(line_split[0])] = []
-                current_user = ORDERS.get(int(line_split[0]))
-                order_list = [line_split[1], line_split[2], line_split[3]]
+                user_id = int(line_split[0])
+                order_number = line_split[1]
+                store_number = line_split[2]
+                status = line_split[3]
+                if int(user_id) not in ORDERS:
+                    ORDERS[user_id] = []
+                current_user = ORDERS.get(user_id)
+                order_list = [order_number, store_number, status]
                 current_user.append(order_list)
-                print(str(ORDERS))
 
         persistence_file.close()
+    print(str(ORDERS))
     print("PERSISTENCE LOAD FINISHED")
     print("-----")
 
@@ -281,7 +284,9 @@ def main():
     """Start the bot."""
     # Create the EventHandler and pass it bot's token.
     persistence_load()
-    updater = Updater(TOKEN, use_context=True)
+    token_file = open(TOKENFILE, "r")
+    token = token_file.read()
+    updater = Updater(token, use_context=True)
 
     jq = updater.job_queue
     now = 0
